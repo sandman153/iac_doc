@@ -1,0 +1,5 @@
+{
+  "itemDisplayName": "Management Group Hierarchy Template",
+  "description": "This template deploys the Management Group Hierarchy in an Azure tenant. It is used to create all child management groups under the tier-1 management group 'ABCD'.",
+  "summary": "Deploys the Management Group Hierarchy in an Azure tenant."
+}

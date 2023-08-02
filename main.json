@@ -1,0 +1,129 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.19.5.34762",
+      "templateHash": "9898972962575008257"
+    }
+  },
+  "parameters": {
+    "environmentName": {
+      "type": "string",
+      "defaultValue": "dev",
+      "allowedValues": [
+        "dev",
+        "test",
+        "prod"
+      ],
+      "metadata": {
+        "description": "The name of the environment. This must be dev, test, or prod."
+      }
+    },
+    "solutionName": {
+      "type": "string",
+      "defaultValue": "[format('toyhr{0}', uniqueString(resourceGroup().id))]",
+      "maxLength": 30,
+      "minLength": 5,
+      "metadata": {
+        "description": "The unique name of the solution. This is used to ensure that resource names are unique."
+      }
+    },
+    "appServicePlanInstanceCount": {
+      "type": "int",
+      "defaultValue": 1,
+      "maxValue": 10,
+      "minValue": 1,
+      "metadata": {
+        "description": "The number of App Service plan instances."
+      }
+    },
+    "appServicePlanSku": {
+      "type": "object",
+      "metadata": {
+        "description": "The name and tier of the App Service plan SKU."
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "The Azure region into which the resources should be deployed."
+      }
+    },
+    "sqlServerAdministratorLogin": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The administrator login username for Azure SQL DB"
+      }
+    },
+    "sqlServerAdministratorPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The administrator login username for Azure SQL DB"
+      }
+    },
+    "sqlDatabaseSku": {
+      "type": "object",
+      "metadata": {
+        "description": "The name and tier of the Azure SQL DB"
+      }
+    }
+  },
+  "variables": {
+    "appServicePlanName": "[format('{0}-{1}-plan', parameters('environmentName'), parameters('solutionName'))]",
+    "appServiceAppName": "[format('{0}-{1}-app', parameters('environmentName'), parameters('solutionName'))]",
+    "sqlServerName": "[format('{0}-{1}-sql', parameters('environmentName'), parameters('solutionName'))]",
+    "sqlDatabaseName": "Employees"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2020-06-01",
+      "name": "[variables('appServicePlanName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "[parameters('appServicePlanSku').name]",
+        "tier": "[parameters('appServicePlanSku').tier]",
+        "capacity": "[parameters('appServicePlanInstanceCount')]"
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2020-06-01",
+      "name": "[variables('appServiceAppName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]",
+        "httpsOnly": true
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers",
+      "apiVersion": "2021-02-01-preview",
+      "name": "[variables('sqlServerName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "administratorLogin": "[parameters('sqlServerAdministratorLogin')]",
+        "administratorLoginPassword": "[parameters('sqlServerAdministratorPassword')]"
+      }
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases",
+      "apiVersion": "2021-02-01-preview",
+      "name": "[format('{0}/{1}', variables('sqlServerName'), variables('sqlDatabaseName'))]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "[parameters('sqlDatabaseSku').name]",
+        "tier": "[parameters('sqlDatabaseSku').tier]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', variables('sqlServerName'))]"
+      ]
+    }
+  ]
+}
